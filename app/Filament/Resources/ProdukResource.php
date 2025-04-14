@@ -33,7 +33,7 @@ class ProdukResource extends Resource
                     ->label('Harga Produk')
                     ->required()
                     ->numeric()
-                    // ->prefix('Rp')
+                    ->prefix('Rp')
                     ->maxValue(42949672)
                     ->columnSpanFull(),
                 Forms\Components\TextInput::make('stok')
