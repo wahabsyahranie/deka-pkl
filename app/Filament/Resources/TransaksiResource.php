@@ -18,7 +18,6 @@ use Illuminate\Database\Eloquent\Collection;
 
 class TransaksiResource extends Resource
 {
-    public static $post;
     protected static ?string $model = Transaksi::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-clipboard-document-list';
@@ -73,14 +72,14 @@ class TransaksiResource extends Resource
                             ->prefix('Rp'),
                         ])
                         ->columns(2)
-                        ->columnSpanFull(),
+                        ->columnSpanFull()
+                        ->dehydrated(true)
+                        ->defaultItems(1),
                 Forms\Components\DatePicker::make('tanggal_transaksi')
                     ->columnSpanFull()
                     ->default(now())
                     ->displayFormat('d M, Y'),
-            ])
-            ->statePath('data')
-            ->model(self::$post);
+        ]);
     }
 
     public static function table(Table $table): Table
@@ -135,13 +134,13 @@ class TransaksiResource extends Resource
                             $produk->save();
                         }),
                     Tables\Actions\DeleteAction::make()
-                    ->after(function ($record) {
-                        $produk = Produk::where('id', $record->produk_id)
-                            ->first();
-                            if ($produk) {
-                                    $produk->increment('stok', $record->jumlah);
-                            }
-                    }),
+                        ->after(function ($record) {
+                            $produk = Produk::where('id', $record->produk_id)
+                                ->first();
+                                if ($produk) {
+                                        $produk->increment('stok', $record->jumlah);
+                                }
+                        }),
                 ])
             ])
             ->bulkActions([

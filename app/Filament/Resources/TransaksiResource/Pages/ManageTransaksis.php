@@ -12,6 +12,7 @@ use Filament\Actions;
 use Filament\Actions\EditAction;
 use Filament\Resources\Pages\ManageRecords;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Database\Eloquent\Model;
 
 class ManageTransaksis extends ManageRecords
 {
@@ -22,34 +23,51 @@ class ManageTransaksis extends ManageRecords
     {
         return [
             Actions\CreateAction::make()
-                ->after(function ($record) {
-                    DetailTransaksi::create([
-                        'transaksi_id' => $record->id,
-                        'lunas' => 0,
-                        'tanggal_tempo' => now()->addMonth()
-                    ]);
-                    $produk = Produk::where('id', $record->produk_id)
-                        ->where('stok', '>=', $record->jumlah)
-                        ->first();
-                        if ($produk) {
-                            $produk->decrement('stok', $record->jumlah);
-                        }
-                })
-
-                ->before(function ($action) {
-                    $data = $action->getFormData();
-                    $produk = \App\Models\Produk::find($data['produk_id'] ?? null);
-            
-                    if ($produk && $produk->stok < ($data['jumlah'] ?? 0)) {
+            ->before(function ($action) {
+                $data = $action->getFormData();
+                foreach ($data['items'] as $item) {
+                    $produk = \App\Models\Produk::find($item['produk_id'] ?? null);
+                    if ($produk && $produk->stok < ($item['jumlah'] ?? 0)) {
                         Notification::make()
-                            ->title('Stok tidak mencukupi')
+                            ->title('Stok '. '' . $produk->name . ' tidak mencukupi')
                             ->body('Stok tersedia: ' . $produk->stok)
                             ->danger()
                             ->send();
-            
-                        $action->halt();
+                          $action->halt();
+                          break;
                     }
-                })
+                }
+
+            })
+            ->using(function (array $data): Model {
+                foreach ($data['items'] as $item) {
+                    $transaksi = Transaksi::create([
+                        'user_id' => $data['user_id'],
+                        'produk_id' => $item['produk_id'],
+                        'jumlah' => $item['jumlah'],
+                        'total' => $item['total'],
+                        'tanggal_transaksi' => $data['tanggal_transaksi'],
+                    ]);
+                    
+                    //insert juga di detailtransaksi
+                    DetailTransaksi::create([
+                        'transaksi_id' => $transaksi->id,
+                        'lunas' => 0,
+                        'tanggal_tempo' => now()->addMonth(),
+                    ]);
+                    
+                    //update stok produk
+                    $produk = Produk::where('id', $item['produk_id'])
+                        ->where('stok', '>=', $item['jumlah'])
+                        ->first();
+                    if ($produk) {
+                        $produk->decrement('stok', $item['jumlah']);
+                    }
+                }
+
+                //dummy, supaya filament gak error
+                return new Transaksi(); 
+            })
         ];
     }
 }
