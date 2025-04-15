@@ -14,7 +14,7 @@ use Filament\Forms\Set;
 use App\Models\Produk;
 use Filament\Actions\EditAction;
 use Filament\Notifications\Notification;
-use Illuminate\Database\Eloquent\Collection;
+
 
 class TransaksiResource extends Resource
 {
@@ -75,6 +75,7 @@ class TransaksiResource extends Resource
                         ->columnSpanFull()
                         ->dehydrated(true)
                         ->defaultItems(1),
+
                 Forms\Components\DatePicker::make('tanggal_transaksi')
                     ->columnSpanFull()
                     ->default(now())
@@ -114,6 +115,53 @@ class TransaksiResource extends Resource
             ->actions([
                 Tables\Actions\ActionGroup::make([
                     Tables\Actions\EditAction::make()
+                        ->form([
+                            Forms\Components\Select::make('user_id')
+                                ->label('Nama Pembeli')
+                                ->relationship('user', 'name')
+                                ->required()
+                                ->columnSpanFull(),
+                                Forms\Components\Select::make('produk_id')
+                                ->label('Pilih Produk')
+                                ->relationship('produk', 'name')
+                                ->required()
+                                ->columnSpanFull()
+                                ->live()
+                                ->afterStateUpdated(function (Set $set, $state) {
+                                    $produk = \App\Models\Produk::find($state);
+                                    $set('harga_produk', $produk?->price ?? 0);
+                                }),
+                            Forms\Components\TextInput::make('jumlah')
+                                ->label('Jumlah yang dipesan')
+                                ->numeric()
+                                ->columnSpanFull()
+                                ->suffix('Pcs')
+                                ->minValue(1)
+                                ->live()
+                                ->afterStateUpdated(function ($state, callable $set, callable $get) {
+                                    $set('total', (int) $get('harga_produk') * (int) $state);
+                                }),
+                            Forms\Components\TextInput::make('harga_produk')
+                                ->label('Harga/pcs')
+                                ->required()
+                                ->disabled()
+                                ->numeric()
+                                ->live()
+                                ->dehydrated(false)
+                                ->afterStateHydrated(fn($record, $set) => $set('harga_produk', $record?->produk->price))
+                                ->prefix('Rp'),
+                            Forms\Components\TextInput::make('total')
+                                ->label('Total Harga Pesanan')
+                                ->required()
+                                ->disabled()
+                                ->numeric()
+                                ->dehydrated(true)
+                                ->prefix('Rp'),
+                            Forms\Components\DatePicker::make('tanggal_transaksi')
+                                ->columnSpanFull()
+                                ->default(now())
+                                ->displayFormat('d M, Y'),
+                        ])
                         ->before(function ($action, $record) {
                             $data = $action->getFormData();
                             $jumlahPesananSekarang = data_get($data, 'jumlah', 0);
@@ -121,7 +169,7 @@ class TransaksiResource extends Resource
                             $produk = \App\Models\Produk::find($data['produk_id'] ?? null);
                             $stokSekarang = ($jumlahPesananSebelum - $jumlahPesananSekarang) + $produk->stok;
 
-                            if ($produk && $stokSekarang <= 0) {
+                            if ($produk && $stokSekarang < 0) {
                                 Notification::make()
                                     ->title('Stok tidak mencukupi')
                                     ->body('Stok tersedia: ' . $produk->stok)
