@@ -13,6 +13,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Filament\Notifications\Notification;
 
 class TransaksiDetailResource extends Resource
 {
@@ -40,37 +41,55 @@ class TransaksiDetailResource extends Resource
                     ->getStateUsing(function ($record) {
                         return 'Rp. ' . number_format($record->transaksi->total, 0, ',', '.');
                     }),
-                // Tables\Columns\ToggleColumn::make('lunas')
-                //     ->label('Is Lunas')
-                //     ->afterStateUpdated(function ($state, $record) {
-                //         if ($state && !$record->tanggal_bayar) {
-                //             $record->update(['tanggal_bayar' => now()]);
-                //         }
-                //     }),
                 Tables\Columns\TextColumn::make('tanggal_bayar')->label('Tanggal Bayar'),
                 Tables\Columns\TextColumn::make('tanggal_tempo')->label('Jatuh Tempo'),
+                Tables\Columns\TextColumn::make('transaksi.jumlah')->label('Jumlah Pesanan'),
             ])
             ->filters([Tables\Filters\TernaryFilter::make('tanggal_bayar')->label('Status Kasbon')->placeholder('Semua Status')->trueLabel('Lunas')->falseLabel('Tidak Lunas')->queries(true: fn(Builder $query) => $query->whereNotNull('tanggal_bayar'), false: fn(Builder $query) => $query->whereNull('tanggal_bayar'))])
             ->actions([
                 Tables\Actions\ActionGroup::make([
                     Tables\Actions\Action::make('dilunasi')
-                        ->color('success')
+                        ->color(function (DetailTransaksi $record) {
+                            return is_null($record->tanggal_bayar) ? 'success' : 'warning';
+                        })
                         ->icon('heroicon-o-banknotes')
                         ->requiresConfirmation()
                         ->label(function (DetailTransaksi $record) {
                             return is_null($record->tanggal_bayar) ? 'Di Lunasi' : 'Gagal di Lunasi';
                         })
                         ->action(function (DetailTransaksi $record){
+                            $transaksi = $record->transaksi;
+                            $produk = $transaksi->produk;
                             if(is_null($record->tanggal_bayar)) {
                                 $record->update([
                                     'tanggal_bayar' => now(),
                                     'lunas' => 1,
                                 ]);
+                                if ($produk && $transaksi) {
+                                    $jumlahSekarang = data_get($transaksi, 'jumlah', 0);
+                                    $produk->stok += $jumlahSekarang;
+                                    $produk->save();
+                                }
+                                Notification::make()
+                                    ->title('Kasbon berhasil dibayar')
+                                    ->body('Stok sudah kembali')
+                                    ->success()
+                                    ->send();
                             } else {
                                 $record->update([
                                     'tanggal_bayar' => null,
                                     'lunas' => 0,
                                 ]);
+                                if ($produk && $transaksi) {
+                                    $jumlahSekarang = data_get($transaksi, 'jumlah', 0);
+                                    $produk->stok -= $jumlahSekarang;
+                                    $produk->save();
+                                }
+                                Notification::make()
+                                    ->title('Kasbon gagal dibayar.')
+                                    ->body('Stok ditarik')
+                                    ->danger()
+                                    ->send();
                             }
                         }),
                     Tables\Actions\DeleteAction::make()

@@ -13,11 +13,13 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Filament\Forms\Set;
+use Filament\Forms\Get;
 use App\Models\DetailTransaksi;
 use Filament\Actions\CreateAction;
 use App\Models\Produk;
 use Filament\Actions\EditAction;
 use Filament\Notifications\Notification;
+use Filament\Forms\Components\Repeater;
 
 class TransaksiResource extends Resource
 {
@@ -35,46 +37,63 @@ class TransaksiResource extends Resource
                     ->relationship('user', 'name')
                     ->required()
                     ->columnSpanFull(),
-                Forms\Components\Select::make('produk_id')
-                    ->label('Pilih Produk')
-                    ->relationship('produk', 'name')
-                    ->required()
-                    ->columnSpanFull()
-                    ->live()
-                    ->afterStateUpdated(function (Set $set, $state) {
-                        $produk = \App\Models\Produk::find($state);
-                        $set('harga_produk', $produk?->price ?? 0);
-                    }),
-                Forms\Components\TextInput::make('jumlah')
-                    ->label('Jumlah yang dipesan')
+                Forms\Components\Repeater::make('Pesanan')
+                ->schema([
+                    Forms\Components\Select::make('produk_id')
+                        ->label('Pilih Produk')
+                        ->relationship('produk', 'name')
+                        ->required()
+                        ->live(debounce: 500)
+                        ->afterStateUpdated(function (Set $set, $state) {
+                            $produk = \App\Models\Produk::find($state);
+                            $set('harga_produk', $produk?->price ?? 0);
+                        }),
+                    Forms\Components\TextInput::make('jumlah')
+                        ->label('Jumlah yang dipesan')
+                        ->numeric()
+                        ->suffix('Pcs')
+                        ->minValue(1)
+                        ->live(debounce: 500)
+                        ->afterStateUpdated(function ($state, callable $set, callable $get) {
+                            $set('total', (int) $get('harga_produk') * (int) $state);
+                        }),
+                    Forms\Components\TextInput::make('harga_produk')
+                        ->label('Harga/pcs')
+                        ->required()
+                        ->disabled()
+                        ->numeric()
+                        ->live(debounce: 500)
+                        ->dehydrated(false)
+                        ->afterStateHydrated(fn($record, $set) => $set('harga_produk', $record?->produk->price))
+                        ->prefix('Rp'),
+                    Forms\Components\TextInput::make('total')
+                        ->label('Total Harga Pesanan')
+                        ->required()
+                        ->disabled()
+                        ->numeric()
+                        ->dehydrated(true)
+                        ->live(debounce: 500)
+                        ->prefix('Rp'),
+                ])
+                ->columns(2)
+                ->columnSpanFull()
+                ->afterStateUpdated(function (Get $get, Set $set) {
+                    $items = $get('Pesanan');
+                    $grandTotal = collect($items)->sum('total');
+                    $set('grand_total', $grandTotal);
+                }),
+                Forms\Components\TextInput::make('grand_total')
+                    ->label('Total Keseluruhan')
+                    ->prefix('Rp')
+                    ->disabled()
                     ->numeric()
-                    ->columnSpanFull()
-                    ->suffix('Pcs')
-                    ->minValue(1)
-                    ->live()
-                    ->afterStateUpdated(function ($state, callable $set, callable $get) {
-                        $set('total', (int) $get('harga_produk') * (int) $state);
-                    }),
+                    ->dehydrated(false)
+                    ->columnSpanFull(),
                 Forms\Components\DatePicker::make('tanggal_transaksi')
                     ->columnSpanFull()
+                    ->readOnly()
                     ->default(now())
                     ->displayFormat('d M, Y'),
-                Forms\Components\TextInput::make('harga_produk')
-                    ->label('Harga/pcs')
-                    ->required()
-                    ->disabled()
-                    ->numeric()
-                    ->live()
-                    ->dehydrated(false)
-                    ->afterStateHydrated(fn($record, $set) => $set('harga_produk', $record?->produk->price))
-                    ->prefix('Rp'),
-                Forms\Components\TextInput::make('total')
-                    ->label('Total Harga Pesanan')
-                    ->required()
-                    ->disabled()
-                    ->numeric()
-                    ->dehydrated(true)
-                    ->prefix('Rp'),
             ]);
     }
 
@@ -96,7 +115,6 @@ class TransaksiResource extends Resource
                     ->getStateUsing(function ($record) {
                         return 'Rp. '.number_format($record->total, 0, ',', '.');
                     }),
-                    // ->money('IDR'),
                 Tables\Columns\TextColumn::make('tanggal_transaksi')
                     ->label('Tanggal Pemesanan'),
             ])
