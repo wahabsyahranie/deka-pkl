@@ -4,6 +4,8 @@ namespace App\Providers;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\ServiceProvider;
+use App\Filament\Resources\TransaksiDetailResource;
+use Filament\Filament;
 
 class AppServiceProvider extends ServiceProvider
 {

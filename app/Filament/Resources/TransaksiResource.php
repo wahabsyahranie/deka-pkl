@@ -111,19 +111,6 @@ class TransaksiResource extends Resource
             ->actions([
                 Tables\Actions\ActionGroup::make([
                     Tables\Actions\EditAction::make()
-                        // ->after(function ($record) {
-                        //     $produk = Produk::where('id', $record->produk_id)
-                        //         ->where('stok', '>=', $record->jumlah)
-                        //         ->first();
-                        //         if ($produk) {
-                        //             $produk->decrement('stok', $record->jumlah);
-                        //         }
-
-                        //     // $cekstok = Transaksi::where('id', $record->transaksi_id);
-                        //     //     if($cekstok->jumlah > $record->jumlah){
-                        //     //         $produk->increment('stok', $record->jumlah);
-                        //     //     }
-                        // })
                         ->before(function ($action, $record) {
                             $data = $action->getFormData();
                             $jumlahPesananSekarang = data_get($data, 'jumlah', 0);
@@ -131,7 +118,7 @@ class TransaksiResource extends Resource
                             $produk = \App\Models\Produk::find($data['produk_id'] ?? null);
                             $stokSekarang = ($jumlahPesananSebelum - $jumlahPesananSekarang) + $produk->stok;
 
-                            if ($produk && $stokSekarang <= 0) {
+                            if ($produk && $stokSekarang < 0) {
                                 Notification::make()
                                     ->title('Stok tidak mencukupi')
                                     ->body('Stok tersedia: ' . $produk->stok)

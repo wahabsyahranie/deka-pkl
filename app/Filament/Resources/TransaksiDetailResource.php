@@ -40,18 +40,42 @@ class TransaksiDetailResource extends Resource
                     ->getStateUsing(function ($record) {
                         return 'Rp. ' . number_format($record->transaksi->total, 0, ',', '.');
                     }),
-                Tables\Columns\ToggleColumn::make('lunas')
-                    ->label('Is Lunas')
-                    ->afterStateUpdated(function ($state, $record) {
-                        if ($state && !$record->tanggal_bayar) {
-                            $record->update(['tanggal_bayar' => now()]);
-                        }
-                    }),
+                // Tables\Columns\ToggleColumn::make('lunas')
+                //     ->label('Is Lunas')
+                //     ->afterStateUpdated(function ($state, $record) {
+                //         if ($state && !$record->tanggal_bayar) {
+                //             $record->update(['tanggal_bayar' => now()]);
+                //         }
+                //     }),
                 Tables\Columns\TextColumn::make('tanggal_bayar')->label('Tanggal Bayar'),
                 Tables\Columns\TextColumn::make('tanggal_tempo')->label('Jatuh Tempo'),
             ])
             ->filters([Tables\Filters\TernaryFilter::make('tanggal_bayar')->label('Status Kasbon')->placeholder('Semua Status')->trueLabel('Lunas')->falseLabel('Tidak Lunas')->queries(true: fn(Builder $query) => $query->whereNotNull('tanggal_bayar'), false: fn(Builder $query) => $query->whereNull('tanggal_bayar'))])
-            ->actions([Tables\Actions\ActionGroup::make([Tables\Actions\EditAction::make(), Tables\Actions\DeleteAction::make()])])
+            ->actions([
+                Tables\Actions\ActionGroup::make([
+                    Tables\Actions\Action::make('dilunasi')
+                        ->color('success')
+                        ->icon('heroicon-o-banknotes')
+                        ->requiresConfirmation()
+                        ->label(function (DetailTransaksi $record) {
+                            return is_null($record->tanggal_bayar) ? 'Di Lunasi' : 'Gagal di Lunasi';
+                        })
+                        ->action(function (DetailTransaksi $record){
+                            if(is_null($record->tanggal_bayar)) {
+                                $record->update([
+                                    'tanggal_bayar' => now(),
+                                    'lunas' => 1,
+                                ]);
+                            } else {
+                                $record->update([
+                                    'tanggal_bayar' => null,
+                                    'lunas' => 0,
+                                ]);
+                            }
+                        }),
+                    Tables\Actions\DeleteAction::make()
+                    ])
+                ])
             ->bulkActions([Tables\Actions\BulkActionGroup::make([Tables\Actions\DeleteBulkAction::make()])]);
     }
 
