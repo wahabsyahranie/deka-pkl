@@ -14,11 +14,12 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Filament\Notifications\Notification;
+use Illuminate\Support\Facades\Auth;
 
 class TransaksiDetailResource extends Resource
 {
     protected static ?string $model = DetailTransaksi::class;
-
+    protected static ?string $navigationGroup = 'Keuangan';
     protected static ?string $navigationLabel = 'Catatan Kasbon';
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
@@ -49,6 +50,10 @@ class TransaksiDetailResource extends Resource
             ->actions([
                 Tables\Actions\ActionGroup::make([
                     Tables\Actions\Action::make('dilunasi')
+                        // ->visible(function () {
+                        //     // Cek jika user adalah super_admin
+                        //     return \Illuminate\Support\Facades\Auth::user() && \Illuminate\Support\Facades\Auth::user()->hasRole('super_admin');
+                        // })
                         ->color(function (DetailTransaksi $record) {
                             return is_null($record->tanggal_bayar) ? 'success' : 'warning';
                         })
@@ -93,6 +98,7 @@ class TransaksiDetailResource extends Resource
                             }
                         }),
                     Tables\Actions\DeleteAction::make()
+                    
                     ])
                 ])
             ->bulkActions([Tables\Actions\BulkActionGroup::make([Tables\Actions\DeleteBulkAction::make()])]);

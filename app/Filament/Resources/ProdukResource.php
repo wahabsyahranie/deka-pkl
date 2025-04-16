@@ -18,6 +18,7 @@ class ProdukResource extends Resource
 {    
     protected static ?string $model = Produk::class;
     protected static ?string $navigationLabel = 'Produk';
+    protected static ?string $navigationGroup = 'Manajemen Produk';
     protected static ?string $navigationIcon = 'heroicon-o-shopping-cart';
 
     public static function form(Form $form): Form

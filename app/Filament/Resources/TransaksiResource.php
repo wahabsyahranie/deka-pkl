@@ -19,7 +19,7 @@ use Filament\Notifications\Notification;
 class TransaksiResource extends Resource
 {
     protected static ?string $model = Transaksi::class;
-
+    protected static ?string $navigationGroup = 'Manajemen Produk';
     protected static ?string $navigationIcon = 'heroicon-o-clipboard-document-list';
     protected static ?string $navigationLabel = 'Form Pemesanan';
 
