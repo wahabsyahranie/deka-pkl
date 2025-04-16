@@ -18,6 +18,8 @@ use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
+use Pest\ArchPresets\Custom;
+use App\Filament\Pages\Auth\CustomRegister;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -28,7 +30,8 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login()
-            
+            ->registration(CustomRegister::class) 
+
             ->colors([
                 'primary' => Color::Amber,
             ])

@@ -10,7 +10,7 @@ use App\Models\Transaksi;
 use BezhanSalleh\FilamentShield\Traits\HasPanelShield;
 use Spatie\Permission\Traits\HasRoles;
 
-class User extends Authenticatable
+class User extends Authenticatable 
 {
     use HasRoles;
 
