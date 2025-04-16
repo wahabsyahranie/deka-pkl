@@ -12,11 +12,11 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
+use BezhanSalleh\FilamentShield\Contracts\HasShieldPermissions;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Auth;
 
-class TransaksiDetailResource extends Resource
+class TransaksiDetailResource extends Resource implements HasShieldPermissions
 {
     protected static ?string $model = DetailTransaksi::class;
     protected static ?string $navigationGroup = 'Keuangan';
@@ -24,6 +24,24 @@ class TransaksiDetailResource extends Resource
     protected static ?string $navigationLabel = 'Catatan Kasbon';
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
+    public static function getPermissionPrefixes(): array
+    {
+        return [
+            'view',
+            'view_any',
+            'create',
+            'update',
+            'restore',
+            'restore_any',
+            'replicate',
+            'reorder',
+            'delete',
+            'delete_any',
+            'force_delete',
+            'force_delete_any',
+            'action'
+        ];
+    }
     public static function form(Form $form): Form
     {
         return $form->schema([

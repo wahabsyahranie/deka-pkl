@@ -10,6 +10,10 @@ class DetailTransaksiPolicy
 {
     use HandlesAuthorization;
 
+    public function action(User $user)
+    {
+        return $user->can('action_transaksi::detail');
+    } 
     /**
      * Determine whether the user can view any models.
      */

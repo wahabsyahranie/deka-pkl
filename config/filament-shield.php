@@ -44,8 +44,7 @@ return [
             'delete',
             'delete_any',
             'force_delete',
-            'force_delete_any',
-            'action',
+            'force_delete_any'
         ],
 
         'page' => 'page',
