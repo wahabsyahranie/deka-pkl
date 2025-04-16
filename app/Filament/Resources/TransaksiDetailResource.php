@@ -5,7 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\TransaksiDetailResource\Pages;
 use App\Filament\Resources\TransaksiDetailResource\RelationManagers;
 use App\Models\DetailTransaksi;
-use Filament\Actions\Action;
+use Filament\Tables\Actions\Action;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -20,6 +20,7 @@ class TransaksiDetailResource extends Resource
 {
     protected static ?string $model = DetailTransaksi::class;
     protected static ?string $navigationGroup = 'Keuangan';
+    protected static ?string $slug = 'catatan-kasbon';
     protected static ?string $navigationLabel = 'Catatan Kasbon';
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
@@ -101,6 +102,16 @@ class TransaksiDetailResource extends Resource
                     
                     ])
                 ])
+            ->emptyStateHeading('Tidak Ada Catatan Kasbon')
+            ->emptyStateDescription('Buat pesanan terlebih dahulu, maka catatan akan tampil')
+            ->emptyStateIcon('heroicon-o-rectangle-stack')
+            ->emptyStateActions([
+                Action::make('create')
+                    ->label('Buat pesanan')
+                    ->url(route('filament.admin.resources.transaksi-resource.index'))
+                    ->icon('heroicon-m-plus')
+                    ->button(),
+            ])
             ->bulkActions([Tables\Actions\BulkActionGroup::make([Tables\Actions\DeleteBulkAction::make()])]);
     }
 

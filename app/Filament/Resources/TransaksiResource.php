@@ -2,24 +2,27 @@
 
 namespace App\Filament\Resources;
 
+use Filament\Forms;
+use Filament\Tables;
+use App\Models\Produk;
+use Filament\Forms\Get;
+use Filament\Forms\Set;
+use Filament\Forms\Form;
+use App\Models\Transaksi;
+use Filament\Tables\Table;
+use Filament\Actions\EditAction;
+use Filament\Resources\Resource;
+use Filament\Tables\Actions\Action;
+use Filament\Notifications\Notification;
 use App\Filament\Resources\TransaksiResource\Pages;
 use App\Filament\Resources\TransaksiResource\RelationManagers;
-use App\Models\Transaksi;
-use Filament\Forms;
-use Filament\Forms\Form;
-use Filament\Resources\Resource;
-use Filament\Tables;
-use Filament\Tables\Table;
-use Filament\Forms\Set;
-use App\Models\Produk;
-use Filament\Actions\EditAction;
-use Filament\Notifications\Notification;
 
 
 class TransaksiResource extends Resource
 {
     protected static ?string $model = Transaksi::class;
     protected static ?string $navigationGroup = 'Manajemen Produk';
+    protected static ?string $slug = 'transaksi-resource';
     protected static ?string $navigationIcon = 'heroicon-o-clipboard-document-list';
     protected static ?string $navigationLabel = 'Form Pemesanan';
 
@@ -75,9 +78,20 @@ class TransaksiResource extends Resource
                         ->columnSpanFull()
                         ->dehydrated(true)
                         ->defaultItems(1),
-
+                 
+                Forms\Components\TextInput::make('total_pesan')
+                    ->placeholder(function (Set $set, Get $get) {
+                        $ttlpesan = collect($get('items'))->pluck('total')->sum();
+                        if (empty($ttlpesan)) {
+                            $ttlpesan = 0;
+                        } else {
+                            $set('total_pesan', $ttlpesan);
+                        }
+                    })
+                    ->prefix('Rp')
+                    ->readOnly()
+                    ->label('Total Harga Pesanan'),
                 Forms\Components\DatePicker::make('tanggal_transaksi')
-                    ->columnSpanFull()
                     ->default(now())
                     ->displayFormat('d M, Y'),
         ]);
@@ -191,6 +205,9 @@ class TransaksiResource extends Resource
                         }),
                 ])
             ])
+            ->emptyStateHeading('Tidak Ada Pesanan')
+            ->emptyStateDescription('Jika kamu memiliki pesanan, maka akan tampil disini.')
+            ->emptyStateIcon('heroicon-o-clipboard-document-list')
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\BulkAction::make('delete')

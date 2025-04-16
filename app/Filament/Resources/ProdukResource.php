@@ -18,6 +18,7 @@ class ProdukResource extends Resource
 {    
     protected static ?string $model = Produk::class;
     protected static ?string $navigationLabel = 'Produk';
+    protected static ?string $slug = 'manajemen-produk';
     protected static ?string $navigationGroup = 'Manajemen Produk';
     protected static ?string $navigationIcon = 'heroicon-o-shopping-cart';
 
@@ -80,6 +81,9 @@ class ProdukResource extends Resource
                     Tables\Actions\DeleteAction::make(),
                 ])
             ])
+            ->emptyStateHeading('Tidak Ada Produk')
+            ->emptyStateDescription('Jika kamu memiliki produk, maka akan tampil disini.')
+            ->emptyStateIcon('heroicon-o-shopping-cart')
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
