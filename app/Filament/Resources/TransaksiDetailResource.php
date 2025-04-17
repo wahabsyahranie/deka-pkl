@@ -2,21 +2,24 @@
 
 namespace App\Filament\Resources;
 
-use App\Filament\Exports\DetailTransaksiExporter;
-use App\Filament\Resources\TransaksiDetailResource\Pages;
-use App\Filament\Resources\TransaksiDetailResource\RelationManagers;
-use App\Models\DetailTransaksi;
-use Filament\Tables\Actions\Action;
+use id;
 use Filament\Forms;
-use Filament\Forms\Form;
-use Filament\Resources\Resource;
 use Filament\Tables;
+use Filament\Forms\Form;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use BezhanSalleh\FilamentShield\Contracts\HasShieldPermissions;
+use App\Models\DetailTransaksi;
+use Filament\Resources\Resource;
+use Filament\Tables\Actions\Action;
+use Illuminate\Support\Facades\Auth;
 use Filament\Notifications\Notification;
 use Filament\Tables\Actions\ExportAction;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Database\Eloquent\Builder;
+use App\Filament\Exports\DetailTransaksiExporter;
+use App\Filament\Resources\TransaksiDetailResource\Pages;
+use BezhanSalleh\FilamentShield\Contracts\HasShieldPermissions;
+use App\Filament\Resources\TransaksiDetailResource\RelationManagers;
+use Doctrine\DBAL\Schema\View;
+use Filament\Tables\Actions\ViewAction;
 
 class TransaksiDetailResource extends Resource implements HasShieldPermissions
 {
@@ -70,9 +73,18 @@ class TransaksiDetailResource extends Resource implements HasShieldPermissions
             ->filters([Tables\Filters\TernaryFilter::make('tanggal_bayar')->label('Status Kasbon')->placeholder('Semua Status')->trueLabel('Lunas')->falseLabel('Tidak Lunas')->queries(true: fn(Builder $query) => $query->whereNotNull('tanggal_bayar'), false: fn(Builder $query) => $query->whereNull('tanggal_bayar'))])
             ->actions([
                 Tables\Actions\ActionGroup::make([
+                    Tables\Actions\Action::make('Coba')
+                        ->modal()
+                        ->label('Detail')
+                        ->icon('heroicon-o-eye')
+                        ->color('secondary')
+                        ->modalContent(
+                            fn ($record) => view('filament.customModal.detail', ['record' => $record,
+                            ])
+                        ),                        
                     Tables\Actions\Action::make('dilunasi')
                         ->visible(function (DetailTransaksi $record) {
-                            //////Hhererere visible dilunasi
+                            // $record['user_id'] = auth()->id;
                         })
                         ->color(function (DetailTransaksi $record) {
                             return is_null($record->tanggal_bayar) ? 'success' : 'warning';
@@ -142,7 +154,8 @@ class TransaksiDetailResource extends Resource implements HasShieldPermissions
             ->headerActions([
                 ExportAction::make()->exporter(DetailTransaksiExporter::class)
                     ->label('Ekspor Tabel')
-                    ->color('primary'),
+                    ->color('primary')
+                    ->icon('heroicon-o-inbox-arrow-down'),
             ]);
     }
 
