@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Exports\DetailTransaksiExporter;
 use App\Filament\Resources\TransaksiDetailResource\Pages;
 use App\Filament\Resources\TransaksiDetailResource\RelationManagers;
 use App\Models\DetailTransaksi;
@@ -14,6 +15,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use BezhanSalleh\FilamentShield\Contracts\HasShieldPermissions;
 use Filament\Notifications\Notification;
+use Filament\Tables\Actions\ExportAction;
 use Illuminate\Support\Facades\Auth;
 
 class TransaksiDetailResource extends Resource implements HasShieldPermissions
@@ -39,7 +41,7 @@ class TransaksiDetailResource extends Resource implements HasShieldPermissions
             'delete_any',
             'force_delete',
             'force_delete_any',
-            'action'
+            'dilunasi'
         ];
     }
     public static function form(Form $form): Form
@@ -69,10 +71,9 @@ class TransaksiDetailResource extends Resource implements HasShieldPermissions
             ->actions([
                 Tables\Actions\ActionGroup::make([
                     Tables\Actions\Action::make('dilunasi')
-                        // ->visible(function () {
-                        //     // Cek jika user adalah super_admin
-                        //     return \Illuminate\Support\Facades\Auth::user() && \Illuminate\Support\Facades\Auth::user()->hasRole('super_admin');
-                        // })
+                        ->visible(function (DetailTransaksi $record) {
+                            //////Hhererere visible dilunasi
+                        })
                         ->color(function (DetailTransaksi $record) {
                             return is_null($record->tanggal_bayar) ? 'success' : 'warning';
                         })
@@ -130,7 +131,19 @@ class TransaksiDetailResource extends Resource implements HasShieldPermissions
                     ->icon('heroicon-m-plus')
                     ->button(),
             ])
-            ->bulkActions([Tables\Actions\BulkActionGroup::make([Tables\Actions\DeleteBulkAction::make()])]);
+            ->bulkActions([
+                Tables\Actions\BulkActionGroup::make([
+                Tables\Actions\DeleteBulkAction::make(),
+                Tables\Actions\ExportBulkAction::make()->exporter(DetailTransaksiExporter::class)
+                    ->label('Ekspor Tabel')
+                    ->color('primary'),
+                ])
+            ])
+            ->headerActions([
+                ExportAction::make()->exporter(DetailTransaksiExporter::class)
+                    ->label('Ekspor Tabel')
+                    ->color('primary'),
+            ]);
     }
 
     public static function getPages(): array
