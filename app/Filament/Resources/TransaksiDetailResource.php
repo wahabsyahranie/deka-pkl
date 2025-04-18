@@ -75,13 +75,12 @@ class TransaksiDetailResource extends Resource implements HasShieldPermissions
                 Tables\Actions\ActionGroup::make([
                     Tables\Actions\Action::make('Coba')
                         ->modal()
-                        ->label('Detail')
+                        ->label('View Catatan')
                         ->icon('heroicon-o-eye')
                         ->color('secondary')
                         ->modalContent(
-                            fn ($record) => view('filament.customModal.detail', ['record' => $record,
-                            ])
-                        ),                        
+                            fn ($record) => view('livewire.detail-transaksi-live-wire', ['record' => $record])
+                        ),
                     Tables\Actions\Action::make('dilunasi')
                         ->visible(function (DetailTransaksi $record) {
                             // $record['user_id'] = auth()->id;
