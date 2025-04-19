@@ -82,16 +82,14 @@ class TransaksiDetailResource extends Resource implements HasShieldPermissions
                             fn ($record) => view('livewire.detail-transaksi-live-wire', ['record' => $record])
                         ),
                     Tables\Actions\Action::make('dilunasi')
-                        ->visible(function (DetailTransaksi $record) {
-                            // $record['user_id'] = auth()->id;
-                        })
+                        ->visible(fn() => Auth::user()->hasAnyRole(['super_admin']))
                         ->color(function (DetailTransaksi $record) {
                             return is_null($record->tanggal_bayar) ? 'success' : 'warning';
                         })
                         ->icon('heroicon-o-banknotes')
                         ->requiresConfirmation()
                         ->label(function (DetailTransaksi $record) {
-                            return is_null($record->tanggal_bayar) ? 'Di Lunasi' : 'Gagal di Lunasi';
+                            return is_null($record->tanggal_bayar) ? 'Sudah Bayar' : 'Belum Bayar';
                         })
                         ->action(function (DetailTransaksi $record){
                             $transaksi = $record->transaksi;
