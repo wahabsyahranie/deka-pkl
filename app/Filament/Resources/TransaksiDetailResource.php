@@ -68,22 +68,34 @@ class TransaksiDetailResource extends Resource
                 false: fn(Builder $query) => $query->whereNull('tanggal_bayar'))])
             ->actions([
                 Tables\Actions\ActionGroup::make([
-                    ViewAction::make('View Catatan')
+                    Tables\Actions\ViewAction::make('View Catatan')
                         ->label('View Catatan')
                         ->icon('heroicon-o-eye')
                         ->form([
                             TextInput::make('transaksi.user.name')
                                 ->label('Nama Customer')
-                                ->disabled(),
+                                ->disabled()
+                                ->afterStateHydrated(function (TextInput $component, ?DetailTransaksi $record) {
+                                    $component->state($record?->transaksi?->user?->name);
+                                }),
                             TextInput::make('transaksi.produk.name')
                                 ->label('Nama Produk')
-                                ->disabled(),
+                                ->disabled()
+                                ->afterStateHydrated(function (TextInput $component, ?DetailTransaksi $record) {
+                                    $component->state($record?->transaksi?->produk?->name);
+                                }),
                             TextInput::make('transaksi.jumlah')
                                 ->label('Jumlah Pembelian')
-                                ->disabled(),
+                                ->disabled()
+                                ->afterStateHydrated(function (TextInput $component, ?DetailTransaksi $record) {
+                                    $component->state($record?->transaksi?->jumlah);
+                                }),
                             TextInput::make('transaksi.total')
                                 ->label('Total Kasbon')
-                                ->disabled(),
+                                ->disabled()
+                                ->afterStateHydrated(function (TextInput $component, ?DetailTransaksi $record) {
+                                    $component->state($record?->transaksi?->total);
+                                }),
                             TextInput::make('statusbon')
                                 ->label('Status Kasbon')
                                 ->disabled()
@@ -101,14 +113,6 @@ class TransaksiDetailResource extends Resource
                                 ->label('Jatuh Tempo')
                                 ->required()
                         ]),
-                    // Tables\Actions\Action::make('View Catatan')
-                    //     ->modal()
-                    //     ->label('View Catatan')
-                    //     ->icon('heroicon-o-eye')
-                    //     ->color('white')
-                    //     ->modalContent(
-                    //         fn ($record) => view('livewire.detail-transaksi-live-wire', ['record' => $record])
-                    //     ),
                     Tables\Actions\Action::make('dilunasi')
                         ->visible(fn() => Auth::user()->hasAnyRole(['super_admin']))
                         ->color(function (DetailTransaksi $record) {
