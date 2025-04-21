@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use id;
 use Filament\Forms;
 use Filament\Tables;
+use Filament\Forms\Get;
 use Filament\Forms\Set;
 use Filament\Forms\Form;
 use Filament\Tables\Table;
@@ -13,17 +14,19 @@ use App\Models\DetailTransaksi;
 use Filament\Resources\Resource;
 use Filament\Tables\Actions\Action;
 use Illuminate\Support\Facades\Auth;
+use function PHPUnit\Framework\isNan;
+use function PHPUnit\Framework\isNull;
 use Filament\Tables\Actions\ViewAction;
+use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
+use Filament\Forms\Components\DatePicker;
 use Filament\Tables\Actions\ExportAction;
 use Illuminate\Database\Eloquent\Builder;
+
 use App\Filament\Exports\DetailTransaksiExporter;
 use App\Filament\Resources\TransaksiDetailResource\Pages;
 use BezhanSalleh\FilamentShield\Contracts\HasShieldPermissions;
 use App\Filament\Resources\TransaksiDetailResource\RelationManagers;
-
-use function PHPUnit\Framework\isNan;
-use function PHPUnit\Framework\isNull;
 
 class TransaksiDetailResource extends Resource
 {
@@ -65,14 +68,47 @@ class TransaksiDetailResource extends Resource
                 false: fn(Builder $query) => $query->whereNull('tanggal_bayar'))])
             ->actions([
                 Tables\Actions\ActionGroup::make([
-                    Tables\Actions\Action::make('View Catatan')
-                        ->modal()
+                    ViewAction::make('View Catatan')
                         ->label('View Catatan')
                         ->icon('heroicon-o-eye')
-                        ->color('white')
-                        ->modalContent(
-                            fn ($record) => view('livewire.detail-transaksi-live-wire', ['record' => $record])
-                        ),
+                        ->form([
+                            TextInput::make('transaksi.user.name')
+                                ->label('Nama Customer')
+                                ->disabled(),
+                            TextInput::make('transaksi.produk.name')
+                                ->label('Nama Produk')
+                                ->disabled(),
+                            TextInput::make('transaksi.jumlah')
+                                ->label('Jumlah Pembelian')
+                                ->disabled(),
+                            TextInput::make('transaksi.total')
+                                ->label('Total Kasbon')
+                                ->disabled(),
+                            TextInput::make('statusbon')
+                                ->label('Status Kasbon')
+                                ->disabled()
+                                ->reactive()
+                                ->afterStateHydrated(function (TextInput $component, ?DetailTransaksi $record) {
+                                    $component->state(
+                                        is_null($record?->tanggal_bayar) ? 'Belum Bayar' : 'Sudah Bayar'
+                                    );
+                                }),
+                            DatePicker::make('tanggal_bayar')
+                                ->label('Tanggal Bayar')
+                                ->reactive()
+                                ->visible(fn (Get $get) => $get('statusbon') === 'Sudah Bayar'),
+                            DatePicker::make('tanggal_tempo')
+                                ->label('Jatuh Tempo')
+                                ->required()
+                        ]),
+                    // Tables\Actions\Action::make('View Catatan')
+                    //     ->modal()
+                    //     ->label('View Catatan')
+                    //     ->icon('heroicon-o-eye')
+                    //     ->color('white')
+                    //     ->modalContent(
+                    //         fn ($record) => view('livewire.detail-transaksi-live-wire', ['record' => $record])
+                    //     ),
                     Tables\Actions\Action::make('dilunasi')
                         ->visible(fn() => Auth::user()->hasAnyRole(['super_admin']))
                         ->color(function (DetailTransaksi $record) {
