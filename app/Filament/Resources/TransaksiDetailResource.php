@@ -121,8 +121,8 @@ class TransaksiDetailResource extends Resource
                     Tables\Actions\Action::make('Faktur')
                         ->label('Unduh Faktur')
                         ->icon('heroicon-o-document-currency-dollar')
-                        ->color('warning')
-                        ->url(route('faktur-kasbon')),
+                        // ->url(route('faktur-kasbon'))
+                        ->color('warning'),
                     Tables\Actions\DeleteAction::make()
                     
                     ])
