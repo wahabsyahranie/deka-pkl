@@ -5,12 +5,15 @@ namespace App\Filament\Resources;
 use id;
 use Filament\Forms;
 use Filament\Tables;
+use Filament\Forms\Set;
 use Filament\Forms\Form;
 use Filament\Tables\Table;
+use Doctrine\DBAL\Schema\View;
 use App\Models\DetailTransaksi;
 use Filament\Resources\Resource;
 use Filament\Tables\Actions\Action;
 use Illuminate\Support\Facades\Auth;
+use Filament\Tables\Actions\ViewAction;
 use Filament\Notifications\Notification;
 use Filament\Tables\Actions\ExportAction;
 use Illuminate\Database\Eloquent\Builder;
@@ -18,10 +21,11 @@ use App\Filament\Exports\DetailTransaksiExporter;
 use App\Filament\Resources\TransaksiDetailResource\Pages;
 use BezhanSalleh\FilamentShield\Contracts\HasShieldPermissions;
 use App\Filament\Resources\TransaksiDetailResource\RelationManagers;
-use Doctrine\DBAL\Schema\View;
-use Filament\Tables\Actions\ViewAction;
 
-class TransaksiDetailResource extends Resource implements HasShieldPermissions
+use function PHPUnit\Framework\isNan;
+use function PHPUnit\Framework\isNull;
+
+class TransaksiDetailResource extends Resource
 {
     protected static ?string $model = DetailTransaksi::class;
     protected static ?string $navigationGroup = 'Keuangan';
@@ -29,24 +33,6 @@ class TransaksiDetailResource extends Resource implements HasShieldPermissions
     protected static ?string $navigationLabel = 'Catatan Kasbon';
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
-    public static function getPermissionPrefixes(): array
-    {
-        return [
-            'view',
-            'view_any',
-            'create',
-            'update',
-            'restore',
-            'restore_any',
-            'replicate',
-            'reorder',
-            'delete',
-            'delete_any',
-            'force_delete',
-            'force_delete_any',
-            'dilunasi'
-        ];
-    }
     public static function form(Form $form): Form
     {
         return $form->schema([
@@ -70,21 +56,27 @@ class TransaksiDetailResource extends Resource implements HasShieldPermissions
                 Tables\Columns\TextColumn::make('tanggal_tempo')->label('Jatuh Tempo'),
                 Tables\Columns\TextColumn::make('transaksi.jumlah')->label('Jumlah Pesanan'),
             ])
-            ->filters([Tables\Filters\TernaryFilter::make('tanggal_bayar')->label('Status Kasbon')->placeholder('Semua Status')->trueLabel('Lunas')->falseLabel('Tidak Lunas')->queries(true: fn(Builder $query) => $query->whereNotNull('tanggal_bayar'), false: fn(Builder $query) => $query->whereNull('tanggal_bayar'))])
+            ->filters([Tables\Filters\TernaryFilter::make('tanggal_bayar')
+                ->label('Status Kasbon')
+                ->placeholder('Semua Status')
+                ->trueLabel('Lunas')
+                ->falseLabel('Tidak Lunas')
+                ->queries(true: fn(Builder $query) => $query->whereNotNull('tanggal_bayar'),
+                false: fn(Builder $query) => $query->whereNull('tanggal_bayar'))])
             ->actions([
                 Tables\Actions\ActionGroup::make([
-                    Tables\Actions\Action::make('Coba')
+                    Tables\Actions\Action::make('View Catatan')
                         ->modal()
                         ->label('View Catatan')
                         ->icon('heroicon-o-eye')
-                        ->color('secondary')
+                        ->color('white')
                         ->modalContent(
                             fn ($record) => view('livewire.detail-transaksi-live-wire', ['record' => $record])
                         ),
                     Tables\Actions\Action::make('dilunasi')
                         ->visible(fn() => Auth::user()->hasAnyRole(['super_admin']))
                         ->color(function (DetailTransaksi $record) {
-                            return is_null($record->tanggal_bayar) ? 'success' : 'warning';
+                            return is_null($record->tanggal_bayar) ? 'success' : 'danger';
                         })
                         ->icon('heroicon-o-banknotes')
                         ->requiresConfirmation()
@@ -126,6 +118,11 @@ class TransaksiDetailResource extends Resource implements HasShieldPermissions
                                     ->send();
                             }
                         }),
+                    Tables\Actions\Action::make('Faktur')
+                        ->label('Unduh Faktur')
+                        ->icon('heroicon-o-document-currency-dollar')
+                        ->color('warning')
+                        ->url(route('faktur-kasbon')),
                     Tables\Actions\DeleteAction::make()
                     
                     ])
